@@ -43,11 +43,14 @@ label.chk{justify-content:flex-start;align-items:center;gap:8px;cursor:pointer}
 <aside>
 <h1>Escada reta, 13 degraus</h1>
 <p class="sub">Largura de 90 cm. Arraste para girar, role para aproximar.</p>
+<label class="chk"><input type="checkbox" id="sd"> Estilo Santos Dumont (degraus alternados)</label>
 <label for="b">Piso do degrau <b id="bv"></b></label>
-<input id="b" type="range" min="22" max="28" step="0.1" value="27">
+<input id="b" type="range" min="16" max="28" step="0.1" value="27">
 <div class="pre"><button data-b="27">Atual 27</button><button data-b="26">26</button><button data-b="25">25</button><button data-b="24">24</button></div>
 <label for="n">Bocel (sobreposição) <b id="nv"></b></label>
 <input id="n" type="range" min="0" max="4" step="0.5" value="2">
+<div id="sdbox" style="display:none"><label for="w">Piso do lado largo <b id="wv"></b></label>
+<input id="w" type="range" min="22" max="40" step="0.1" value="27"></div>
 <label for="h">Altura da pessoa <b id="hv"></b></label>
 <input id="h" type="range" min="1.6" max="2" step="0.01" value="1.8">
 <label for="p">Posição na escada <b id="pv"></b></label>
@@ -61,9 +64,10 @@ label.chk{justify-content:flex-start;align-items:center;gap:8px;cursor:pointer}
 <dt>Altura livre na viga</dt><dd id="cl"></dd>
 <dt>Chapa do degrau</dt><dd id="dp"></dd>
 <dt>Vão entre degraus</dt><dd id="gp"></dd>
+<dt>Piso útil lado largo</dt><dd id="uw"></dd>
 </dl>
 <div id="status"></div>
-<p class="note">Do projeto e do croqui: laje de 15 cm, viga de 15 cm de largura com face inferior a 2,375 m. Assumidas: espinha central de 15 cm, chapas de 5 cm sem espelho (exceto o último, fechado pela parede), parede com 2,55 m de altura e 2,80 m de comprimento (planta), terminando na viga, e abertura de 90 cm na laje. A altura livre é medida na linha dos bocéis, sob a face interna da viga.</p>
+<p class="note">Do projeto e do croqui: laje de 15 cm, viga de 15 cm de largura com face inferior a 2,375 m. Assumidas: espinha central de 15 cm, chapas de 5 cm sem espelho (exceto o último, fechado pela parede), parede com 2,55 m de altura e 2,80 m de comprimento (planta), terminando na viga, e abertura de 90 cm na laje. A altura livre é medida na linha dos bocéis, sob a face interna da viga. No estilo Santos Dumont, cada degrau tem um lado largo (claro) e um lado recuado (escuro), alternando a cada degrau: o piso útil do lado largo é o piso nariz a nariz mais o recuo, e a altura livre continua dependendo só do piso nariz a nariz. O mínimo usual de piso é 25 cm (NBR 9077), mas confirme no código de obras se esse tipo de escada é aceito como acesso.</p>
 </aside>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -94,6 +98,7 @@ const mBeam=new THREE.MeshLambertMaterial({color:0xe0902b});
 const mWall=new THREE.MeshLambertMaterial({color:0x8fa3b3,transparent:true,opacity:0.32,depthWrite:false});
 const mFloor=new THREE.MeshLambertMaterial({color:0x7d8b96});
 const mSteel=new THREE.MeshLambertMaterial({color:0x56626d});
+const mNarrow=new THREE.MeshLambertMaterial({color:0xaab6c0});
 const mEdge=new THREE.LineBasicMaterial({color:0x2a3641,transparent:true,opacity:0.55});
 function box(g,x0,x1,y0,y1,z0,z1,mat){
   const geo=new THREE.BoxGeometry(x1-x0,y1-y0,z1-z0);
@@ -112,14 +117,22 @@ box(fixed,-0.2,0,0,TOP-SLAB,-0.6,1.5,mConc);
 // parte variável
 const stairs=new THREE.Group();scene.add(stairs);
 function clear(g){while(g.children.length){const c=g.children.pop();if(c.geometry)c.geometry.dispose();}}
-function build(b,n){
+function build(b,n,cp){
   clear(stairs);
   for(let i=1;i<=N;i++){
     const x1=(N-i)*b;
-    if(i<N)box(stairs,Math.max(0,x1-b-n),x1,i*R-0.05,i*R,0,W,mStep);
+    if(i<N){
+      const rear=Math.max(0,x1-b-n-cp),y0=i*R-0.05,y1=i*R;
+      if(!cp){box(stairs,rear,x1,y0,y1,0,W,mStep);}
+      else{
+        const odd=(i%2===1),zw=odd?[W/2,W]:[0,W/2],zn=odd?[0,W/2]:[W/2,W];
+        box(stairs,rear,x1,y0,y1,zw[0],zw[1],mStep);
+        if(x1-cp>rear)box(stairs,rear,x1-cp,y0,y1,zn[0],zn[1],mNarrow);
+      }
+    }
   }
   box(stairs,0,BX0,0,TOP-SLAB,-0.12,0,mWall);
-  const th=Math.atan(R/b),h=0.15,off=(b+n)*R/b+0.05,cy=(h/2)/Math.cos(th);
+  const th=Math.atan(R/b),h=0.15,off=(b+n+cp)*R/b+0.05,cy=(h/2)/Math.cos(th);
   const Tl=x=>R*(N-x/b)-off,Cx=x=>Tl(x)-cy;
   const xa=-0.12,xb=b*(N-(off+cy)/R);
   const L=Math.hypot(xb-xa,Cx(xa)-Cx(xb));
@@ -127,7 +140,7 @@ function build(b,n){
   sp.position.set((xa+xb)/2,(Cx(xa)+Cx(xb))/2,W/2);sp.rotation.z=-th;stairs.add(sp);
   const se=new THREE.LineSegments(new THREE.EdgesGeometry(sp.geometry),mEdge);
   se.position.copy(sp.position);se.rotation.z=sp.rotation.z;stairs.add(se);
-  for(let i=1;i<N;i++){const xc=(N-i)*b-(b+n)/2;box(stairs,xc-0.04,xc+0.04,Tl(xc),i*R-0.05,W/2-0.03,W/2+0.03,mSteel);}
+  for(let i=1;i<N;i++){const xc=(N-i)*b-(b+n+cp)/2;box(stairs,xc-0.04,xc+0.04,Tl(xc),i*R-0.05,W/2-0.03,W/2+0.03,mSteel);}
 }
 // pessoa e linha de altura livre
 const mOk=new THREE.MeshLambertMaterial({color:0x3f7fb5});
@@ -145,10 +158,10 @@ const lbl=$('lbl'),tmp=new THREE.Vector3();let labels=[];
 function seg(a,c2,dash){const g=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(a[0],a[1],a[2]),new THREE.Vector3(c2[0],c2[1],c2[2])]);const l=new THREE.Line(g,dash?mDash:mDim);if(dash)l.computeLineDistances();dimG.add(l);}
 function tag(txt,p,cls){const el=document.createElement('div');el.className='t '+(cls||'d');el.textContent=txt;lbl.appendChild(el);labels.push({el:el,p:new THREE.Vector3(p[0],p[1],p[2])});}
 function clearDims(){while(dimG.children.length){const o=dimG.children.pop();o.geometry.dispose();}lbl.innerHTML='';labels=[];}
-function buildDims(b,n,H,x,yf,yp,c){
+function buildDims(b,n,H,x,yf,yp,c,cp){
   clearDims();
   const zf=W+0.1,th=Math.atan(R/b);
-  for(let i=1;i<N;i++)tag(String(i),[(N-i)*b-(b+n)/2,i*R+0.07,W+0.04],'n');
+  for(let i=1;i<N;i++)tag(String(i),[(N-i)*b-(b+n+cp)/2,i*R+0.07,W+0.04],'n');
   tag('13',[-0.28,TOP+0.1,W+0.04],'n');
   const xa=6*b,xb=7*b,ya=6*R,yb=7*R;
   seg([xa,ya,zf],[xb,ya,zf]);seg([xa,ya,zf],[xa,yb,zf]);
@@ -175,7 +188,9 @@ function feetY(x,b){if(x<0)return TOP;const i=N-1-Math.floor(x/b);return i<=0?0:
 
 function update(){
   const b=$('b').value/100,n=$('n').value/100,H=+$('h').value,p=$('p').value/100;
-  build(b,n);
+  const sd=$('sd').checked,w=$('w').value/100,cp=sd?Math.max(0,w-b):0;
+  $('sdbox').style.display=sd?'block':'none';$('wv').textContent=f(w*100,1)+' cm';
+  build(b,n,cp);
   $('nv').textContent=f(n*100,1)+' cm';
   $('bv').textContent=f(b*100,1)+' cm';$('hv').textContent=f(H)+' m';
   const xa=(N-1)*b+0.35,xb=-0.35,x=xa+(xb-xa)*p;
@@ -197,16 +212,19 @@ function update(){
   $('bl').textContent=f(bl,1)+' cm';
   $('sl').textContent=f(Math.atan(R/b)*180/Math.PI,1)+'°';
   $('cl').textContent=f(c)+' m';
-  $('dp').textContent=f((b+n)*100,1)+' cm';
+  $('dp').textContent=f((b+n+cp)*100,1)+' cm'+(cp?' (lado largo)':'');
+  $('uw').textContent=sd?f(Math.max(w,b)*100,1)+' cm'+(Math.max(w,b)>=0.25?' (ok)':' (abaixo de 25)'):'—';
   $('gp').textContent=f((R-0.05)*100,1)+' cm';
   const s=$('status');
   if(c>=2){s.dataset.s='ok';s.textContent='Altura livre de '+f(c)+' m: atende o mínimo de 2,00 m.';}
   else if(c>=1.9){s.dataset.s='warn';s.textContent='Altura livre de '+f(c)+' m: faltam '+f((2-c)*100,0)+' cm para 2,00 m.';}
   else{s.dataset.s='bad';s.textContent='Altura livre de '+f(c)+' m: faltam '+f((2-c)*100,0)+' cm para 2,00 m.';}
-  buildDims(b,n,H,x,yf,yp,c);
+  buildDims(b,n,H,x,yf,yp,c,cp);
 }
-['b','n','h','p'].forEach(id=>$(id).addEventListener('input',update));
+['b','n','w','h','p'].forEach(id=>$(id).addEventListener('input',update));
 document.querySelectorAll('button[data-b]').forEach(el=>el.addEventListener('click',()=>{$('b').value=el.dataset.b;update();}));
+let prevB='27';
+$('sd').addEventListener('change',()=>{if($('sd').checked){prevB=$('b').value;$('b').value=24;$('w').value=27;}else{$('b').value=prevB;}update();});
 update();
 (function loop(){ctl.update();renderer.render(scene,cam);placeLabels();requestAnimationFrame(loop);})();
 </script>
