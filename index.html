@@ -67,7 +67,7 @@ label.chk{justify-content:flex-start;align-items:center;gap:8px;cursor:pointer}
 <dt>Piso útil lado largo</dt><dd id="uw"></dd>
 </dl>
 <div id="status"></div>
-<p class="note">Do projeto e do croqui: laje de 15 cm, viga de 15 cm de largura com face inferior a 2,375 m. Assumidas: espinha central de 15 cm, chapas de 5 cm sem espelho (exceto o último, fechado pela parede), parede com 2,55 m de altura e 2,80 m de comprimento (planta), terminando na viga, e abertura de 90 cm na laje. A altura livre é medida na linha dos bocéis, sob a face interna da viga. No estilo Santos Dumont, cada degrau tem um lado largo (claro) e um lado recuado (escuro), alternando a cada degrau: o piso útil do lado largo é o piso nariz a nariz mais o recuo, e a altura livre continua dependendo só do piso nariz a nariz. O mínimo usual de piso é 25 cm (NBR 9077), mas confirme no código de obras se esse tipo de escada é aceito como acesso.</p>
+<p class="note">Do projeto e do croqui: laje de 15 cm, viga de 15 cm de largura com face inferior a 2,375 m. Assumidas: espinha central de 15 cm, chapas de 5 cm sem espelho (exceto o último, fechado pela parede), parede com 2,55 m de altura e 2,80 m de comprimento (planta), terminando na viga, e abertura de 90 cm na laje. A altura livre é medida na linha dos bocéis, sob a face interna da viga. No estilo Santos Dumont, cada degrau tem um lado largo e um lado recuado, unidos por uma curva suave e alternando a cada degrau: o piso útil do lado largo é o piso nariz a nariz mais o recuo, e a altura livre continua dependendo só do piso nariz a nariz. O mínimo usual de piso é 25 cm (NBR 9077), mas confirme no código de obras se esse tipo de escada é aceito como acesso.</p>
 </aside>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -117,6 +117,18 @@ box(fixed,-0.2,0,0,TOP-SLAB,-0.6,1.5,mConc);
 // parte variável
 const stairs=new THREE.Group();scene.add(stairs);
 function clear(g){while(g.children.length){const c=g.children.pop();if(c.geometry)c.geometry.dispose();}}
+function sdTread(rear,x1,cp,odd,y0){
+  const t=0.26,z0=W/2-t/2,s=u=>u*u*(3-2*u);
+  const xf=z=>{const u=Math.min(1,Math.max(0,(z-z0)/t)),k=odd?s(u):1-s(u);return Math.max(rear+0.02,x1-cp*(1-k));};
+  const zs=[0];for(let k=0;k<=16;k++)zs.push(z0+t*k/16);zs.push(W);
+  const sh=new THREE.Shape();
+  zs.forEach((z,j)=>{const X=xf(z),Y=-z;if(j)sh.lineTo(X,Y);else sh.moveTo(X,Y);});
+  sh.lineTo(rear,-W);sh.lineTo(rear,0);sh.closePath();
+  const g=new THREE.ExtrudeGeometry(sh,{depth:0.05,bevelEnabled:false});
+  g.rotateX(-Math.PI/2);g.translate(0,y0,0);
+  stairs.add(new THREE.Mesh(g,mStep));
+  stairs.add(new THREE.LineSegments(new THREE.EdgesGeometry(g,30),mEdge));
+}
 function build(b,n,cp){
   clear(stairs);
   for(let i=1;i<=N;i++){
@@ -125,9 +137,7 @@ function build(b,n,cp){
       const rear=Math.max(0,x1-b-n-cp),y0=i*R-0.05,y1=i*R;
       if(!cp){box(stairs,rear,x1,y0,y1,0,W,mStep);}
       else{
-        const odd=(i%2===1),zw=odd?[W/2,W]:[0,W/2],zn=odd?[0,W/2]:[W/2,W];
-        box(stairs,rear,x1,y0,y1,zw[0],zw[1],mStep);
-        if(x1-cp>rear)box(stairs,rear,x1-cp,y0,y1,zn[0],zn[1],mNarrow);
+        sdTread(rear,x1,cp,i%2===1,y0);
       }
     }
   }
