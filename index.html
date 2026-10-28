@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Escada 3D</title>
+<style>
+:root{--bg:#e8ecef;--panel:#f6f8f9;--ink:#1b2530;--mute:#586775;--line:#c3ccd3;--ok:#1d7a4a;--warn:#a85f00;--bad:#b3261e;--acc:#1f5f8b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12181e;--panel:#1a222a;--ink:#e6ecf1;--mute:#9aa9b6;--line:#2e3a45;--ok:#5fd38f;--warn:#f0a845;--bad:#ff8a80;--acc:#7fb8e0}}
+:root[data-theme="dark"]{--bg:#12181e;--panel:#1a222a;--ink:#e6ecf1;--mute:#9aa9b6;--line:#2e3a45;--ok:#5fd38f;--warn:#f0a845;--bad:#ff8a80;--acc:#7fb8e0}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 ui-sans-serif,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;display:grid;grid-template-columns:1fr 320px}
+#view{position:relative;min-height:320px;min-width:0}
+#view canvas{display:block;width:100%;height:100%}
+aside{background:var(--panel);border-left:1px solid var(--line);padding:18px 18px 22px;overflow:auto}
+h1{font-size:18px;margin:0 0 2px;font-weight:650;letter-spacing:-.01em}
+.sub{color:var(--mute);font-size:13px;margin:0 0 16px}
+label{display:flex;justify-content:space-between;font-size:13px;margin:14px 0 4px}
+label b{font-variant-numeric:tabular-nums;font-weight:600}
+input[type=range]{width:100%;accent-color:var(--acc)}
+.pre{display:flex;gap:6px;margin-top:8px}
+button{flex:1;font:inherit;font-size:13px;padding:7px 4px;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:6px;cursor:pointer}
+button:hover{border-color:var(--acc)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+dl{display:grid;grid-template-columns:1fr auto;gap:6px 10px;margin:18px 0 0;padding-top:14px;border-top:1px solid var(--line);font-size:13px}
+dt{color:var(--mute)}dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+#status{margin:14px 0 0;padding:10px 12px;border-radius:6px;border:1px solid var(--line);font-size:13px;font-weight:600}
+#status[data-s=ok]{color:var(--ok);border-color:var(--ok)}
+#status[data-s=warn]{color:var(--warn);border-color:var(--warn)}
+#status[data-s=bad]{color:var(--bad);border-color:var(--bad)}
+#head{margin:8px 0 0;font-size:13px;font-weight:600}
+.note{margin:16px 0 0;font-size:12px;color:var(--mute)}
+#lbl{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:2}
+.t{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-size:11px;font-variant-numeric:tabular-nums;line-height:1.2;padding:1px 5px;border-radius:4px;background:var(--panel);color:var(--ink);border:1px solid var(--line);opacity:.94}
+.t.n{padding:0 4px;font-weight:700;color:var(--acc);border-color:var(--acc);font-size:10.5px}
+.t.d{font-weight:600}
+label.chk{justify-content:flex-start;align-items:center;gap:8px;cursor:pointer}
+@media (max-width:760px){body{grid-template-columns:1fr;grid-template-rows:55vh auto;height:auto}html,body{height:auto}#view{height:55vh}aside{border-left:0;border-top:1px solid var(--line)}}
+</style>
+</head>
+<body>
+<div id="view"><div id="lbl"></div></div>
+<aside>
+<h1>Escada reta, 13 degraus</h1>
+<p class="sub">Largura de 90 cm. Arraste para girar, role para aproximar.</p>
+<label for="b">Piso do degrau <b id="bv"></b></label>
+<input id="b" type="range" min="22" max="28" step="0.5" value="24">
+<div class="pre"><button data-b="27">Atual 27</button><button data-b="26">26</button><button data-b="25">25</button><button data-b="24">24</button></div>
+<label for="n">Bocel (sobreposição) <b id="nv"></b></label>
+<input id="n" type="range" min="0" max="4" step="0.5" value="2">
+<label for="h">Altura da pessoa <b id="hv"></b></label>
+<input id="h" type="range" min="1.6" max="2" step="0.01" value="1.8">
+<label for="p">Posição na escada <b id="pv"></b></label>
+<input id="p" type="range" min="0" max="100" step="1" value="62">
+<label class="chk"><input type="checkbox" id="dm" checked> Mostrar medidas</label>
+<p id="head"></p>
+<dl>
+<dt>Espelho (13 degraus)</dt><dd id="r"></dd>
+<dt>2h + b (ideal 63 a 64)</dt><dd id="bl"></dd>
+<dt>Inclinação</dt><dd id="sl"></dd>
+<dt>Altura livre na viga</dt><dd id="cl"></dd>
+<dt>Chapa do degrau</dt><dd id="dp"></dd>
+<dt>Vão entre degraus</dt><dd id="gp"></dd>
+</dl>
+<div id="status"></div>
+<p class="note">Do projeto e do croqui: laje de 15 cm, viga de 15 cm de largura com face inferior a 2,375 m. Assumidas: espinha central de 15 cm, chapas de 5 cm sem espelho (exceto o último, fechado pela parede), parede com 2,55 m de altura e 2,80 m de comprimento (planta), terminando na viga, e abertura de 90 cm na laje. A altura livre é medida na linha dos bocéis, sob a face interna da viga.</p>
+</aside>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const N=13,TOP=2.70,BEAM=2.375,SLAB=0.15,W=0.9,BX0=2.79,BX1=2.94,ZP=0.45;
+const R=TOP/N;
+const $=id=>document.getElementById(id);
+const f=(v,d=2)=>v.toFixed(d).replace('.',',');
+const view=$('view');
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+view.appendChild(renderer.domElement);
+const scene=new THREE.Scene();
+const cam=new THREE.PerspectiveCamera(38,1,0.1,60);
+cam.position.set(2.6,2.0,7.4);
+const ctl=new THREE.OrbitControls(cam,renderer.domElement);
+ctl.target.set(1.4,1.25,0.45);ctl.enableDamping=true;ctl.update();
+scene.add(new THREE.AmbientLight(0xffffff,0.75));
+const sun=new THREE.DirectionalLight(0xffffff,0.7);sun.position.set(3,6,5);scene.add(sun);
+function theme(){const c=getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();renderer.setClearColor(c||'#e8ecef');}
+theme();matchMedia('(prefers-color-scheme: dark)').addEventListener('change',theme);
+function size(){const w=view.clientWidth,h=view.clientHeight;renderer.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix();}
+new ResizeObserver(size).observe(view);size();
+
+const mConc=new THREE.MeshLambertMaterial({color:0xaab3ba});
+const mStep=new THREE.MeshLambertMaterial({color:0xdfe4e8});
+const mBeam=new THREE.MeshLambertMaterial({color:0xe0902b});
+const mWall=new THREE.MeshLambertMaterial({color:0x8fa3b3,transparent:true,opacity:0.32,depthWrite:false});
+const mFloor=new THREE.MeshLambertMaterial({color:0x7d8b96});
+const mSteel=new THREE.MeshLambertMaterial({color:0x56626d});
+const mEdge=new THREE.LineBasicMaterial({color:0x2a3641,transparent:true,opacity:0.55});
+function box(g,x0,x1,y0,y1,z0,z1,mat){
+  const geo=new THREE.BoxGeometry(x1-x0,y1-y0,z1-z0);
+  const m=new THREE.Mesh(geo,mat);m.position.set((x0+x1)/2,(y0+y1)/2,(z0+z1)/2);g.add(m);
+  const e=new THREE.LineSegments(new THREE.EdgesGeometry(geo),mEdge);e.position.copy(m.position);g.add(e);
+}
+// estrutura fixa
+const fixed=new THREE.Group();scene.add(fixed);
+box(fixed,-1.8,4.6,-0.05,0,-0.6,1.5,mFloor);
+box(fixed,-1.8,0,TOP-SLAB,TOP,-0.6,1.5,mConc);
+box(fixed,BX0,4.6,TOP-SLAB,TOP,-0.6,1.5,mConc);
+box(fixed,BX0,BX1,BEAM,TOP-SLAB,-0.6,1.5,mBeam);
+box(fixed,0,BX0,TOP-SLAB,TOP,W,1.5,mConc);
+box(fixed,0,BX0,TOP-SLAB,TOP,-0.6,-0.12,mConc);
+box(fixed,-0.2,0,0,TOP-SLAB,-0.6,1.5,mConc);
+// parte variável
+const stairs=new THREE.Group();scene.add(stairs);
+function clear(g){while(g.children.length){const c=g.children.pop();if(c.geometry)c.geometry.dispose();}}
+function build(b,n){
+  clear(stairs);
+  for(let i=1;i<=N;i++){
+    const x1=(N-i)*b;
+    if(i<N)box(stairs,Math.max(0,x1-b-n),x1,i*R-0.05,i*R,0,W,mStep);
+  }
+  box(stairs,0,BX0,0,TOP-SLAB,-0.12,0,mWall);
+  const th=Math.atan(R/b),h=0.15,off=(b+n)*R/b+0.05,cy=(h/2)/Math.cos(th);
+  const Tl=x=>R*(N-x/b)-off,Cx=x=>Tl(x)-cy;
+  const xa=-0.12,xb=b*(N-(off+cy)/R);
+  const L=Math.hypot(xb-xa,Cx(xa)-Cx(xb));
+  const sp=new THREE.Mesh(new THREE.BoxGeometry(L,h,0.08),mSteel);
+  sp.position.set((xa+xb)/2,(Cx(xa)+Cx(xb))/2,W/2);sp.rotation.z=-th;stairs.add(sp);
+  const se=new THREE.LineSegments(new THREE.EdgesGeometry(sp.geometry),mEdge);
+  se.position.copy(sp.position);se.rotation.z=sp.rotation.z;stairs.add(se);
+  for(let i=1;i<N;i++){const xc=(N-i)*b-(b+n)/2;box(stairs,xc-0.04,xc+0.04,Tl(xc),i*R-0.05,W/2-0.03,W/2+0.03,mSteel);}
+}
+// pessoa e linha de altura livre
+const mOk=new THREE.MeshLambertMaterial({color:0x3f7fb5});
+const mHit=new THREE.MeshLambertMaterial({color:0xd0382e});
+const body=new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.14,1,20),mOk);
+const head=new THREE.Mesh(new THREE.SphereGeometry(0.11,20,16),mOk);
+scene.add(body,head);
+const lineGeo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3(0,1,0)]);
+const lineMat=new THREE.LineBasicMaterial({color:0x1d7a4a});
+const gap=new THREE.Line(lineGeo,lineMat);scene.add(gap);
+const dimG=new THREE.Group();scene.add(dimG);
+const mDim=new THREE.LineBasicMaterial({color:0x2b8ad8});
+const mDash=new THREE.LineDashedMaterial({color:0x2b8ad8,dashSize:0.08,gapSize:0.05});
+const lbl=$('lbl'),tmp=new THREE.Vector3();let labels=[];
+function seg(a,c2,dash){const g=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(a[0],a[1],a[2]),new THREE.Vector3(c2[0],c2[1],c2[2])]);const l=new THREE.Line(g,dash?mDash:mDim);if(dash)l.computeLineDistances();dimG.add(l);}
+function tag(txt,p,cls){const el=document.createElement('div');el.className='t '+(cls||'d');el.textContent=txt;lbl.appendChild(el);labels.push({el:el,p:new THREE.Vector3(p[0],p[1],p[2])});}
+function clearDims(){while(dimG.children.length){const o=dimG.children.pop();o.geometry.dispose();}lbl.innerHTML='';labels=[];}
+function buildDims(b,n,H,x,yf,yp,c){
+  clearDims();
+  const zf=W+0.1,th=Math.atan(R/b);
+  for(let i=1;i<N;i++)tag(String(i),[(N-i)*b-(b+n)/2,i*R+0.07,W+0.04],'n');
+  tag('13',[-0.28,TOP+0.1,W+0.04],'n');
+  const xa=6*b,xb=7*b,ya=6*R,yb=7*R;
+  seg([xa,ya,zf],[xb,ya,zf]);seg([xa,ya,zf],[xa,yb,zf]);
+  tag('piso '+f(b*100,1)+' cm',[(xa+xb)/2,ya-0.1,zf]);
+  tag('espelho '+f(R*100,1)+' cm',[xa-0.25,(ya+yb)/2,zf]);
+  seg([0,TOP,zf],[N*b,0,zf],true);
+  const cx=N*b,r=0.6,pts=[];
+  for(let k=0;k<=12;k++){const a=th*k/12;pts.push(new THREE.Vector3(cx-r*Math.cos(a),0.005+r*Math.sin(a),zf));}
+  dimG.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),mDim));
+  seg([cx-1,0.005,zf],[cx,0.005,zf]);
+  tag(f(th*180/Math.PI,1)+'°',[cx-0.9*Math.cos(th/2),0.9*Math.sin(th/2),zf]);
+  seg([BX1+0.12,0,1.62],[BX1+0.12,BEAM,1.62]);
+  tag(f(BEAM)+' m até a viga',[BX1+0.12,BEAM*0.45,1.62]);
+  tag('livre '+f(c)+' m',[BX0,(yp+BEAM)/2,ZP+0.5]);
+  seg([x,yf,ZP+0.32],[x,yf+H,ZP+0.32]);
+  tag('pessoa '+f(H)+' m',[x,yf+H+0.12,ZP+0.32]);
+}
+function placeLabels(){
+  const on=$('dm').checked;lbl.style.display=on?'block':'none';dimG.visible=on;if(!on)return;
+  const w=view.clientWidth,h=view.clientHeight;
+  for(const L of labels){tmp.copy(L.p).project(cam);L.el.style.display=tmp.z<1?'block':'none';L.el.style.left=((tmp.x+1)/2*w)+'px';L.el.style.top=((1-tmp.y)/2*h)+'px';}
+}
+function feetY(x,b){if(x<0)return TOP;const i=N-1-Math.floor(x/b);return i<=0?0:Math.min(i,N-1)*R;}
+
+function update(){
+  const b=$('b').value/100,n=$('n').value/100,H=+$('h').value,p=$('p').value/100;
+  build(b,n);
+  $('nv').textContent=f(n*100,1)+' cm';
+  $('bv').textContent=f(b*100,1)+' cm';$('hv').textContent=f(H)+' m';
+  const xa=(N-1)*b+0.35,xb=-0.35,x=xa+(xb-xa)*p;
+  $('pv').textContent=Math.round(p*100)+'%';
+  const yf=feetY(x,b);
+  body.scale.y=H-0.22;body.position.set(x,yf+(H-0.22)/2,ZP);
+  head.position.set(x,yf+H-0.11,ZP);
+  const hit=x>BX0-0.14&&x<BX1+0.14&&yf+H>BEAM;
+  body.material=head.material=hit?mHit:mOk;
+  $('head').textContent=hit?'A cabeça bate na viga nesta posição.':'Nesta posição a pessoa passa livre.';
+  $('head').style.color=hit?'var(--bad)':'var(--mute)';
+  // altura livre na linha dos bocéis, sob a face interna da viga
+  const yp=Math.max(0,R*(N-BX0/b));
+  const c=BEAM-yp;
+  lineGeo.setFromPoints([new THREE.Vector3(BX0,yp,ZP+0.5),new THREE.Vector3(BX0,BEAM,ZP+0.5)]);
+  gap.material.color.set(c>=2?0x1d7a4a:c>=1.9?0xa85f00:0xb3261e);
+  $('r').textContent=f(R*100,1)+' cm';
+  const bl=2*R*100+b*100;
+  $('bl').textContent=f(bl,1)+' cm';
+  $('sl').textContent=f(Math.atan(R/b)*180/Math.PI,1)+'°';
+  $('cl').textContent=f(c)+' m';
+  $('dp').textContent=f((b+n)*100,1)+' cm';
+  $('gp').textContent=f((R-0.05)*100,1)+' cm';
+  const s=$('status');
+  if(c>=2){s.dataset.s='ok';s.textContent='Altura livre de '+f(c)+' m: atende o mínimo de 2,00 m.';}
+  else if(c>=1.9){s.dataset.s='warn';s.textContent='Altura livre de '+f(c)+' m: faltam '+f((2-c)*100,0)+' cm para 2,00 m.';}
+  else{s.dataset.s='bad';s.textContent='Altura livre de '+f(c)+' m: faltam '+f((2-c)*100,0)+' cm para 2,00 m.';}
+  buildDims(b,n,H,x,yf,yp,c);
+}
+['b','n','h','p'].forEach(id=>$(id).addEventListener('input',update));
+document.querySelectorAll('button[data-b]').forEach(el=>el.addEventListener('click',()=>{$('b').value=el.dataset.b;update();}));
+update();
+(function loop(){ctl.update();renderer.render(scene,cam);placeLabels();requestAnimationFrame(loop);})();
+</script>
+</body>
+</html>
