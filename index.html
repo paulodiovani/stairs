@@ -71,7 +71,7 @@ button.on{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc);font-wei
 <dt>Piso máx. para 2,00 m</dt><dd id="gm"></dd>
 </dl>
 <div id="status"></div>
-<p class="note">Do projeto e do croqui: laje de 15 cm, viga de 15 cm de largura e 20 cm de altura abaixo da laje (face inferior a 2,35 m). Assumidas: espinha central de 15 cm, chapas de 5 cm sem espelho (exceto o último, fechado pela parede), parede com 2,55 m de altura e 2,80 m de comprimento (planta), terminando na viga, e abertura de 90 cm na laje. A altura livre é medida na linha dos bocéis, sob a face interna da viga. No estilo Santos Dumont, cada degrau tem um lado largo e um lado recuado, unidos por uma curva suave e alternando a cada degrau: o piso útil do lado largo é o piso nariz a nariz mais o recuo, e a altura livre continua dependendo só do piso nariz a nariz. O mínimo usual de piso é 25 cm (NBR 9077), mas confirme no código de obras se esse tipo de escada é aceito como acesso.</p>
+<p class="note">O endereço da página guarda os valores do painel: copie o link para compartilhar. Do projeto e do croqui: laje de 15 cm, viga de 15 cm de largura e 20 cm de altura abaixo da laje (face inferior a 2,35 m). Assumidas: espinha central de 15 cm, chapas de 5 cm sem espelho (exceto o último, fechado pela parede), parede com 2,55 m de altura e 2,80 m de comprimento (planta), terminando na viga, e abertura de 90 cm na laje. A altura livre é medida na linha dos bocéis, sob a face interna da viga. No estilo Santos Dumont, cada degrau tem um lado largo e um lado recuado, unidos por uma curva suave e alternando a cada degrau: o piso útil do lado largo é o piso nariz a nariz mais o recuo, e a altura livre continua dependendo só do piso nariz a nariz. O mínimo usual de piso é 25 cm (NBR 9077), mas confirme no código de obras se esse tipo de escada é aceito como acesso.</p>
 </aside>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -236,13 +236,41 @@ function update(){
   else if(c>=1.9){s.dataset.s='warn';s.textContent='Altura livre de '+f(c)+' m: faltam '+f((2-c)*100,0)+' cm para 2,00 m.';}
   else{s.dataset.s='bad';s.textContent='Altura livre de '+f(c)+' m: faltam '+f((2-c)*100,0)+' cm para 2,00 m.';}
   buildDims(b,n,H,x,yf,yp,c,cp);
+  scheduleHash();
 }
 ['b','n','w','h','p'].forEach(id=>$(id).addEventListener('input',update));
 document.querySelectorAll('button[data-b]').forEach(el=>el.addEventListener('click',()=>{$('b').value=el.dataset.b;update();}));
+const hashOk=(o,k,lo,hi,st)=>o[k]!==undefined&&o[k]>=lo&&o[k]<=hi&&(o[k]-lo)%(st||1)===0;
+function applyHash(){
+  const o={};
+  let hs=location.hash.replace(/^#/,'');try{hs=decodeURIComponent(hs);}catch(e){}
+  const sc={p:10,b:10,l:10,a:100};
+  const put=(k,v)=>{const z=v*(sc[k]||1);if(isFinite(z)&&Math.abs(z-Math.round(z))<1e-6)o[k]=Math.round(z);};
+  if(hs.indexOf(':')>=0){hs.split(';').forEach(t=>{const i=t.indexOf(':');if(i<1)return;const k=t.slice(0,i).trim(),s=t.slice(i+1).trim();if(k.length===1&&'cpblaxs'.indexOf(k)>=0&&/^\d+(\.\d+)?$/.test(s))put(k,parseFloat(s));});}
+  else hs.split('-').forEach(t=>{const m=/^([a-z])(\d{1,4})$/.exec(t);if(m)o[m[1]]=+m[2];});
+  N=hashOk(o,'c',13,15)?o.c:13;R=TOP/N;
+  $('b').value=hashOk(o,'p',160,280)?o.p/10:27;
+  $('n').value=hashOk(o,'b',0,40,5)?o.b/10:2;
+  $('w').value=hashOk(o,'l',220,400)?o.l/10:27;
+  $('h').value=hashOk(o,'a',160,200)?o.a/100:1.8;
+  $('sd').checked=hashOk(o,'s',0,1)&&o.s===1;
+  const bb=$('b').value/100,xa=(N-1)*bb+0.35,xb=-0.35;
+  $('p').value=hashOk(o,'x',0,100)?o.x:Math.round(100*(xa-(N-3.5)*bb)/(xa-xb));
+  update();
+}
+let ht=null;
+function writeHash(){
+  const t1=n=>(n/10).toFixed(1),bt=Math.round($('n').value*10);
+  const v=['c:'+N,'p:'+t1(Math.round($('b').value*10)),'b:'+(bt%10?t1(bt):bt/10),'l:'+t1(Math.round($('w').value*10)),'a:'+(Math.round($('h').value*100)/100).toFixed(2),'x:'+$('p').value,'s:'+($('sd').checked?1:0)].join(';');
+  if(location.hash==='#'+v)return;
+  try{history.replaceState(null,'','#'+v);}catch(e){try{location.replace('#'+v);}catch(e2){}}
+}
+function scheduleHash(){clearTimeout(ht);ht=setTimeout(writeHash,250);}
 let prevB='27';
 document.querySelectorAll('button[data-n]').forEach(el=>el.addEventListener('click',()=>{N=+el.dataset.n;R=TOP/N;const b=$('b').value/100,xa=(N-1)*b+0.35,xb=-0.35;$('p').value=Math.round(100*(xa-(N-3.5)*b)/(xa-xb));update();}));
 $('sd').addEventListener('change',()=>{if($('sd').checked){prevB=$('b').value;$('b').value=24;$('w').value=27;}else{$('b').value=prevB;}update();});
-update();
+applyHash();
+addEventListener('hashchange',applyHash);
 (function loop(){ctl.update();renderer.render(scene,cam);placeLabels();requestAnimationFrame(loop);})();
 </script>
 </body>
