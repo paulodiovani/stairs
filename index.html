@@ -35,15 +35,18 @@ dt{color:var(--mute)}dd{margin:0;text-align:right;font-variant-numeric:tabular-n
 .t.n{padding:0 4px;font-weight:700;color:var(--acc);border-color:var(--acc);font-size:10.5px}
 .t.d{font-weight:600}
 label.chk{justify-content:flex-start;align-items:center;gap:8px;cursor:pointer}
+button.on{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc);font-weight:650}
 @media (max-width:760px){body{grid-template-columns:1fr;grid-template-rows:55vh auto;height:auto}html,body{height:auto}#view{height:55vh}aside{border-left:0;border-top:1px solid var(--line)}}
 </style>
 </head>
 <body>
 <div id="view"><div id="lbl"></div></div>
 <aside>
-<h1>Escada reta, 13 degraus</h1>
+<h1>Escada metálica, 90 cm de largura</h1>
 <p class="sub">Largura de 90 cm. Arraste para girar, role para aproximar.</p>
 <label class="chk"><input type="checkbox" id="sd"> Estilo Santos Dumont (degraus alternados)</label>
+<label>Quantidade de degraus</label>
+<div class="pre"><button data-n="13">13 (ajustado)</button><button data-n="14">14</button><button data-n="15">15 (planta)</button></div>
 <label for="b">Piso do degrau <b id="bv"></b></label>
 <input id="b" type="range" min="16" max="28" step="0.1" value="27">
 <div class="pre"><button data-b="27">Atual 27</button><button data-b="26">26</button><button data-b="25">25</button><button data-b="24">24</button></div>
@@ -58,22 +61,23 @@ label.chk{justify-content:flex-start;align-items:center;gap:8px;cursor:pointer}
 <label class="chk"><input type="checkbox" id="dm" checked> Mostrar medidas</label>
 <p id="head"></p>
 <dl>
-<dt>Espelho (13 degraus)</dt><dd id="r"></dd>
+<dt id="rt">Espelho (13 degraus)</dt><dd id="r"></dd>
 <dt>2h + b (ideal 63 a 64)</dt><dd id="bl"></dd>
 <dt>Inclinação</dt><dd id="sl"></dd>
 <dt>Altura livre na viga</dt><dd id="cl"></dd>
 <dt>Chapa do degrau</dt><dd id="dp"></dd>
 <dt>Vão entre degraus</dt><dd id="gp"></dd>
 <dt>Piso útil lado largo</dt><dd id="uw"></dd>
+<dt>Piso máx. para 2,00 m</dt><dd id="gm"></dd>
 </dl>
 <div id="status"></div>
-<p class="note">Do projeto e do croqui: laje de 15 cm, viga de 15 cm de largura com face inferior a 2,375 m. Assumidas: espinha central de 15 cm, chapas de 5 cm sem espelho (exceto o último, fechado pela parede), parede com 2,55 m de altura e 2,80 m de comprimento (planta), terminando na viga, e abertura de 90 cm na laje. A altura livre é medida na linha dos bocéis, sob a face interna da viga. No estilo Santos Dumont, cada degrau tem um lado largo e um lado recuado, unidos por uma curva suave e alternando a cada degrau: o piso útil do lado largo é o piso nariz a nariz mais o recuo, e a altura livre continua dependendo só do piso nariz a nariz. O mínimo usual de piso é 25 cm (NBR 9077), mas confirme no código de obras se esse tipo de escada é aceito como acesso.</p>
+<p class="note">Do projeto e do croqui: laje de 15 cm, viga de 15 cm de largura e 20 cm de altura abaixo da laje (face inferior a 2,35 m). Assumidas: espinha central de 15 cm, chapas de 5 cm sem espelho (exceto o último, fechado pela parede), parede com 2,55 m de altura e 2,80 m de comprimento (planta), terminando na viga, e abertura de 90 cm na laje. A altura livre é medida na linha dos bocéis, sob a face interna da viga. No estilo Santos Dumont, cada degrau tem um lado largo e um lado recuado, unidos por uma curva suave e alternando a cada degrau: o piso útil do lado largo é o piso nariz a nariz mais o recuo, e a altura livre continua dependendo só do piso nariz a nariz. O mínimo usual de piso é 25 cm (NBR 9077), mas confirme no código de obras se esse tipo de escada é aceito como acesso.</p>
 </aside>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
-const N=13,TOP=2.70,BEAM=2.375,SLAB=0.15,W=0.9,BX0=2.79,BX1=2.94,ZP=0.45;
-const R=TOP/N;
+let N=13;const TOP=2.70,BEAM=2.35,SLAB=0.15,W=0.9,BX0=2.79,BX1=2.94,ZP=0.45;
+let R=TOP/N;
 const $=id=>document.getElementById(id);
 const f=(v,d=2)=>v.toFixed(d).replace('.',',');
 const view=$('view');
@@ -172,7 +176,7 @@ function buildDims(b,n,H,x,yf,yp,c,cp){
   clearDims();
   const zf=W+0.1,th=Math.atan(R/b);
   for(let i=1;i<N;i++)tag(String(i),[(N-i)*b-(b+n+cp)/2,i*R+0.07,W+0.04],'n');
-  tag('13',[-0.28,TOP+0.1,W+0.04],'n');
+  tag(String(N),[-0.28,TOP+0.1,W+0.04],'n');
   const xa=6*b,xb=7*b,ya=6*R,yb=7*R;
   seg([xa,ya,zf],[xb,ya,zf]);seg([xa,ya,zf],[xa,yb,zf]);
   tag('piso '+f(b*100,1)+' cm',[(xa+xb)/2,ya-0.1,zf]);
@@ -225,6 +229,8 @@ function update(){
   $('dp').textContent=f((b+n+cp)*100,1)+' cm'+(cp?' (lado largo)':'');
   $('uw').textContent=sd?f(Math.max(w,b)*100,1)+' cm'+(Math.max(w,b)>=0.25?' (ok)':' (abaixo de 25)'):'—';
   $('gp').textContent=f((R-0.05)*100,1)+' cm';
+  $('rt').textContent='Espelho ('+N+' degraus)';$('gm').textContent=f(BX0/(N-(BEAM-2)/R)*100,1)+' cm';
+  document.querySelectorAll('button[data-n]').forEach(e=>e.classList.toggle('on',+e.dataset.n===N));
   const s=$('status');
   if(c>=2){s.dataset.s='ok';s.textContent='Altura livre de '+f(c)+' m: atende o mínimo de 2,00 m.';}
   else if(c>=1.9){s.dataset.s='warn';s.textContent='Altura livre de '+f(c)+' m: faltam '+f((2-c)*100,0)+' cm para 2,00 m.';}
@@ -234,6 +240,7 @@ function update(){
 ['b','n','w','h','p'].forEach(id=>$(id).addEventListener('input',update));
 document.querySelectorAll('button[data-b]').forEach(el=>el.addEventListener('click',()=>{$('b').value=el.dataset.b;update();}));
 let prevB='27';
+document.querySelectorAll('button[data-n]').forEach(el=>el.addEventListener('click',()=>{N=+el.dataset.n;R=TOP/N;const b=$('b').value/100,xa=(N-1)*b+0.35,xb=-0.35;$('p').value=Math.round(100*(xa-(N-3.5)*b)/(xa-xb));update();}));
 $('sd').addEventListener('change',()=>{if($('sd').checked){prevB=$('b').value;$('b').value=24;$('w').value=27;}else{$('b').value=prevB;}update();});
 update();
 (function loop(){ctl.update();renderer.render(scene,cam);placeLabels();requestAnimationFrame(loop);})();
