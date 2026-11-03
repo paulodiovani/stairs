@@ -42,8 +42,8 @@ button.on{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc);font-wei
 <body>
 <div id="view"><div id="lbl"></div></div>
 <aside>
-<h1>Escada metálica, 90 cm de largura</h1>
-<p class="sub">Largura de 90 cm. Arraste para girar, role para aproximar.</p>
+<h1>Escada metálica, 89 cm de largura</h1>
+<p class="sub">Largura de 89 cm. Arraste para girar, role para aproximar.</p>
 <label class="chk"><input type="checkbox" id="sd"> Estilo Santos Dumont (degraus alternados)</label>
 <label>Quantidade de degraus</label>
 <div class="pre"><button data-n="13">13 (ajustado)</button><button data-n="14">14</button><button data-n="15">15 (planta)</button></div>
@@ -71,12 +71,12 @@ button.on{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc);font-wei
 <dt>Piso máx. para 2,00 m</dt><dd id="gm"></dd>
 </dl>
 <div id="status"></div>
-<p class="note">O endereço da página guarda os valores do painel: copie o link para compartilhar. Do projeto e do croqui: laje de 15 cm, viga de 15 cm de largura e 20 cm de altura abaixo da laje (face inferior a 2,35 m). Assumidas: espinha central de 15 cm, chapas de 5 cm sem espelho (exceto o último, fechado pela parede), parede com 2,55 m de altura e 2,80 m de comprimento (planta), terminando na viga, e abertura de 90 cm na laje. A altura livre é medida na linha dos bocéis, sob a face interna da viga. No estilo Santos Dumont, cada degrau tem um lado largo e um lado recuado, unidos por uma curva suave e alternando a cada degrau: o piso útil do lado largo é o piso nariz a nariz mais o recuo, e a altura livre continua dependendo só do piso nariz a nariz. O mínimo usual de piso é 25 cm (NBR 9077), mas confirme no código de obras se esse tipo de escada é aceito como acesso.</p>
+<p class="note">O endereço da página guarda os valores do painel: copie o link para compartilhar. Do projeto e do croqui: laje de 15 cm, viga de 15 cm de largura e 14 cm de altura abaixo da laje (face inferior a 2,38 m), pé-direito de 2,52 m e abertura de 0,89 × 2,74 m (medidas de obra). Assumidas: espinha central de 15 cm, chapas de 5 cm sem espelho (exceto o último, fechado pela parede), parede com 2,52 m de altura, terminando na viga. A altura livre é medida na linha dos bocéis, sob a face interna da viga. No estilo Santos Dumont, cada degrau tem um lado largo e um lado recuado, unidos por uma curva suave e alternando a cada degrau: o piso útil do lado largo é o piso nariz a nariz mais o recuo, e a altura livre continua dependendo só do piso nariz a nariz. O mínimo usual de piso é 25 cm (NBR 9077), mas confirme no código de obras se esse tipo de escada é aceito como acesso.</p>
 </aside>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
-let N=13;const TOP=2.70,BEAM=2.35,SLAB=0.15,W=0.9,BX0=2.79,BX1=2.94,ZP=0.45;
+let N=13;const TOP=2.67,BEAM=2.38,SLAB=0.15,W=0.89,BX0=2.74,BX1=2.89,ZP=0.45;
 let R=TOP/N;
 const $=id=>document.getElementById(id);
 const f=(v,d=2)=>v.toFixed(d).replace('.',',');
