@@ -71,7 +71,7 @@ button.on{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc);font-wei
 <dt>Piso máx. para 2,00 m</dt><dd id="gm"></dd>
 </dl>
 <div id="status"></div>
-<p class="note">O endereço da página guarda os valores do painel: copie o link para compartilhar. Do projeto e do croqui: laje de 15 cm, viga de 15 cm de largura e 14 cm de altura abaixo da laje (face inferior a 2,38 m), pé-direito de 2,52 m e abertura de 0,89 × 2,74 m (medidas de obra). Assumidas: espinha central de 15 cm, chapas de 5 cm sem espelho (exceto o último, fechado pela parede), parede com 2,52 m de altura, terminando na viga. A altura livre é medida na linha dos bocéis, sob a face interna da viga. No estilo Santos Dumont, cada degrau tem um lado largo e um lado recuado, unidos por uma curva suave e alternando a cada degrau: o piso útil do lado largo é o piso nariz a nariz mais o recuo, e a altura livre continua dependendo só do piso nariz a nariz. O mínimo usual de piso é 25 cm (NBR 9077), mas confirme no código de obras se esse tipo de escada é aceito como acesso.</p>
+<p class="note">O endereço da página guarda os valores do painel: copie o link para compartilhar. Do projeto e do croqui: laje de 15 cm, viga de 15 cm de largura e 14 cm de altura abaixo da laje (face inferior a 2,38 m), pé-direito de 2,52 m e abertura de 0,89 × 2,74 m (medidas de obra). Assumidas: espinha central de 15 cm, chapas de 5 cm sem espelho (exceto o último, fechado pela parede), parede com 2,52 m de altura, terminando na viga. A altura livre é medida do degrau logo abaixo da viga (altura real do degrau) até a face inferior da viga. No estilo Santos Dumont, cada degrau tem um lado largo e um lado recuado, unidos por uma curva suave e alternando a cada degrau: o piso útil do lado largo é o piso nariz a nariz mais o recuo, e a altura livre continua dependendo só do piso nariz a nariz. O mínimo usual de piso é 25 cm (NBR 9077), mas confirme no código de obras se esse tipo de escada é aceito como acesso.</p>
 </aside>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -136,9 +136,9 @@ function sdTread(rear,x1,cp,odd,y0){
 function build(b,n,cp){
   clear(stairs);
   for(let i=1;i<=N;i++){
-    const x1=(N-i)*b;
+    const top=(i===N-1),x1=(N-i)*b;
     if(i<N){
-      const rear=Math.max(0,x1-b-n-cp),y0=i*R-0.05,y1=i*R;
+      const rear=top?x1-b-n-cp:Math.max(0,x1-b-n-cp),y0=i*R-0.05,y1=i*R;
       if(!cp){box(stairs,rear,x1,y0,y1,0,W,mStep);}
       else{
         sdTread(rear,x1,cp,i%2===1,y0);
@@ -217,7 +217,7 @@ function update(){
   $('head').textContent=hit?'A cabeça bate na viga nesta posição.':'Nesta posição a pessoa passa livre.';
   $('head').style.color=hit?'var(--bad)':'var(--mute)';
   // altura livre na linha dos bocéis, sob a face interna da viga
-  const yp=Math.max(0,R*(N-BX0/b));
+  const yp=feetY(BX0,b);
   const c=BEAM-yp;
   lineGeo.setFromPoints([new THREE.Vector3(BX0,yp,ZP+0.5),new THREE.Vector3(BX0,BEAM,ZP+0.5)]);
   gap.material.color.set(c>=2?0x1d7a4a:c>=1.9?0xa85f00:0xb3261e);
@@ -229,7 +229,7 @@ function update(){
   $('dp').textContent=f((b+n+cp)*100,1)+' cm'+(cp?' (lado largo)':'');
   $('uw').textContent=sd?f(Math.max(w,b)*100,1)+' cm'+(Math.max(w,b)>=0.25?' (ok)':' (abaixo de 25)'):'—';
   $('gp').textContent=f((R-0.05)*100,1)+' cm';
-  $('rt').textContent='Espelho ('+N+' degraus)';$('gm').textContent=f(BX0/(N-(BEAM-2)/R)*100,1)+' cm';
+  $('rt').textContent='Espelho ('+N+' degraus)';$('gm').textContent=(()=>{const im=Math.floor((BEAM-2)/R+1e-9),dn=N-1-im;return dn>0?f(BX0/dn*100,1)+' cm':'qualquer';})();
   document.querySelectorAll('button[data-n]').forEach(e=>e.classList.toggle('on',+e.dataset.n===N));
   const s=$('status');
   if(c>=2){s.dataset.s='ok';s.textContent='Altura livre de '+f(c)+' m: atende o mínimo de 2,00 m.';}
